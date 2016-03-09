@@ -24,8 +24,7 @@ void foo(){
 
 * D comes with a default GC while C++ is GC free. D can also be used without a GC but there are a few inconveniences. First the standard library(phobos) in D is not move aware. This means you can not have a `std::vector<std::unique_ptr>` in phobos. It is possible to write your own containers that are move aware which means it is possible to have an array or vector with unique pointers.
 
-* Moving in C++ is just an rvalue cast while in D it really moves. In C++ you would write a function `template<class T> void foo(T&& t){}`, it captures `t` as `T&&` if `t` is an rvalue or it captures `t` as `T&` if `t` is an lvalue. You then use `std::move` with a `move constructor` to move your objects and `std::forward` to perfectly forward your objects. In D you would create two functions `void foo(T)(ref T t){}` which always captures lvalues by references and `void foo(T)(T t){}` which only captures rvalues. As far as I know moving in D is also not exception safe. D moves objects with a bitwise copy, this means you should not have
-  internal pointers.
+* Moving in C++ is just an rvalue cast while in D it really moves. In C++ you would write a function `template<class T> void foo(T&& t){}`, it captures `t` as `T&&` if `t` is an rvalue or it captures `t` as `T&` if `t` is an lvalue. You then use `std::move` with a `move constructor` to move your objects and `std::forward` to perfectly forward your objects. In D you would create two functions `void foo(T)(ref T t){}` which always captures lvalues by references and `void foo(T)(T t){}` which only captures rvalues. As far as I know moving in D is also not exception safe. D moves objects with a bitwise copy, this means you are not allowed to have internal pointers.
 
 * `structs` in D don't have a default constructor because every struct needs exception free default construction and this must be known at compile time. But it is possible to initalize structs with custom values.
 
