@@ -37,7 +37,6 @@ struct Foo{
 
 * Variables in D are always initialized unless explicity told not to `Foo f = void;`. Initialization rules are bit more complicated in C++ and depend on the context.
 
-* The `static cast` in  D needs a runtime check. As far as I know it is possible to create a `static cast` at compile time with meta programming in D, see this [answer](http://stackoverflow.com/a/35701007/944430) for more information.
 
 * D as well as C++ can disable default construction, copy construction and copy assignment. Note that in D it is still possible to call `T.init` even if the default constructor is disabled.
 
@@ -84,13 +83,13 @@ The code above forwards all methods and members from `Bar` to `Foo` and makes `F
 
 # Meta programming
 
-* It is possible to pass almost anything to a template in D. C++ is limited to integrals and chars.
+* It is possible to pass almost any value to a template in D. C++ is limited to integrals, chars and addresses of functions and symbols.
 
 * Template instantiations are done in C++ with `<Foo,Bar>` and in D with `!(Foo,bar)`.
 
 * D has no fold expressions like C++ `foo(f(args)...);`, although they can be implemented as a library.
 
-* D can evaluate almost any function at compile time, where in C++ those functions need to be marked as `constexpr` and have a restrictions such as no allocations.
+* D can evaluate almost any function at compile time with very few restrictions. One restriction would be casting see [answer](http://stackoverflow.com/a/35701007/944430) for more information where in C++ those functions need to be marked as `constexpr` and have many restrictions such as no allocations.
 
 * C++ can have multiple variadic templates `template<class... As, class... Bs>` but they need to be inferred. This is not possible in D but you can have templates of templates `contains!SomeTypes.all!SomeOtherTypes`.
 
