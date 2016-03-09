@@ -80,7 +80,7 @@ The code above forwards all methods and members from `Bar` to `Foo` and makes `F
 
 * C++ has `namepspaces` and are used like this `namespace Foo{ namespace Bar{ namespace Baz{..}}}`. D uses modules with a file structure. To get `foo.bar.baz` you can create `baz.d` inside the `bar` folder and `bar` inside the `foo` folder.
 
-* Globals in D are only thread local by default unless they are immutable. To get thread safe global access you would mark the global variable as `shared`. To get the same global variables as in C++ you would used `__gshared`.
+* Globals in D are only thread local by default unless they are immutable. To get thread safe global access you would mark the global variable as `shared`. To get the same global variables as in C++ you would use `__gshared`.
 
 * `const` in D is [transitive](https://dlang.org/const-faq.html#transitive-const). It is `undefined behaviour` in D to cast away the `const` and modify the object.
 # Meta programming
