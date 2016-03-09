@@ -27,7 +27,7 @@ void foo(){
 * Moving in C++ is just an rvalue cast while in D it really moves. In C++ you would write a function `template<class T> void foo(T&& t){}`, it captures `t` as `T&&` if `t` is an rvalue or it captures `t` as `T&` if `t` is an lvalue. You then use `std::move` with a `move constructor` to move your objects and `std::forward` to perfectly forward your objects. In D you would create two functions `void foo(T)(ref T t){}` which always captures lvalues by references and `void foo(T)(T t){}` which only captures rvalues. As far as I know moving in D is also not exception safe. D moves objects with a bitwise copy, this means you should not have
   internal pointers.
 
-* `structs` in D don't have a default constructor because every type needs exception free default construction and this must be known at compile time. But it is possible to initalize structs with custom values.
+* `structs` in D don't have a default constructor because every struct needs exception free default construction and this must be known at compile time. But it is possible to initalize structs with custom values.
 
 ~~~cpp
 struct Foo{
@@ -37,7 +37,7 @@ struct Foo{
 
 * Variables in D are always initialized unless explicity told not to `Foo f = void;`. Initialization rules are bit more complicated in C++ and depend on the context.
 
-* C++ has a `static_cast` while D does not. As far as I know it is possible to create a static cast at compile time with meta programming in D, see this [answer](http://stackoverflow.com/a/35701007/944430) for more information.
+* The `static cast` in  D needs a runtime check. As far as I know it is possible to create a `static cast` at compile time with meta programming in D, see this [answer](http://stackoverflow.com/a/35701007/944430) for more information.
 
 * D as well as C++ can disable default construction, copy construction and copy assignment. Note that in D it is still possible to call `T.init` even if the default constructor is disabled.
 
@@ -72,17 +72,16 @@ The code above forwards all methods and members from `Bar` to `Foo` and makes `F
 
 * C++ has `user defined literals` like `1_seconds`. D doesn't have this feature but it can be emualted with ufcs `1.seconds`.
 
-* Interfaces can not be templated in C++ but they can be templated in D.
-
 * Conditonal compilation uses the pre-processor in C++ `#if, #elif, #else, and #endif Directives`. In D it is `version(YourKeywork){...}`.
 
-* Exceptions in D require the GC.
+* Exceptions in D can be allocated automatically by the GC but you can also allocate the storage for an exception yourself.
 
 * C++ has `namepspaces` and are used like this `namespace Foo{ namespace Bar{ namespace Baz{..}}}`. D uses modules with a file structure. To get `foo.bar.baz` you can create `baz.d` inside the `bar` folder and `bar` inside the `foo` folder.
 
 * Globals in D are only thread local by default unless they are immutable. To get thread safe global access you would mark the global variable as `shared`. To get the same global variables as in C++ you would use `__gshared`.
 
-* `const` in D is [transitive](https://dlang.org/const-faq.html#transitive-const). It is `undefined behaviour` in D to cast away the `const` and modify the object.
+* `const` in D is [transitive](https://dlang.org/const-faq.html#transitive-const). In D and C++ it is `undefined behaviour` to cast away the `const` and modify the object.
+
 # Meta programming
 
 * It is possible to pass almost anything to a template in D. C++ is limited to integrals and chars.
@@ -103,7 +102,7 @@ The code above forwards all methods and members from `Bar` to `Foo` and makes `F
 
 * D also has `user defined attributes` `@Encrypted string name;` which can be used by D's static introspection. C++17 gets `user defined attributes` in the form of `[[YourKeyWord]]`
 
-* D can print any type at compile time or runtime with `writeln(SomeType.stringof)` or `writeln(typeof(somevar).stringof)`. Anything that is available at compile time can be printed at compile time with `pragma(msg, SomeType)`. This is very useful for debugging meta programs. C++ can only do this with some compiler hacks as far as I know.
+* D can print any type at runtime with `writeln(SomeType.stringof)` or `writeln(typeof(somevar).stringof)`. Anything that is available at compile time can be printed at compile time with `pragma(msg, SomeType)`. This is very useful for debugging meta programs. C++ can only do this with some compiler hacks as far as I know.
 
 * It is possible to pass `symbols` to templates in D. `template Foo(alias someSymbol)` This just means that it is possible to pass anything that is available at compile time into `Foo`. Examples would be other templates, functions, lambdas, constants etc. This is similar to Lisp.
 
