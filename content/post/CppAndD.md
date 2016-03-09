@@ -72,7 +72,7 @@ The code above forwards all methods and members from `Bar` to `Foo` and makes `F
 
 * C++ has `user defined literals` like `1_seconds`. D doesn't have this feature but it can be emualted with ufcs `1.seconds`.
 
-* Conditonal compilation uses the pre-processor in C++ `#if, #elif, #else, and #endif Directives`. In D it is `version(YourKeywork){...}`.
+* Conditonal compilation uses the pre-processor in C++ `#if, #elif, #else, and #endif Directives`. In D it is `version(YourKeyword){...}`.
 
 * Exceptions in D can be allocated automatically by the GC but you can also allocate the storage for an exception yourself.
 
