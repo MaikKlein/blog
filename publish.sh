@@ -8,5 +8,5 @@ git init
 git remote add origin git@github.com:MaikKlein/maikklein.github.io.git
 git add .
 git commit -m "update"
-git push -f origin master
+git push origin master
 
