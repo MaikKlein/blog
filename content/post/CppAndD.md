@@ -72,9 +72,9 @@ The code above forwards all methods and members from `Bar` to `Foo` and makes `F
 
 * Conditonal compilation uses the pre-processor in C++ `#if, #elif, #else, and #endif Directives`. In D it is `version(YourKeyword){...}`.
 
-* Exceptions in D can be allocated automatically by the GC but you can also allocate the storage for an exception yourself.
+* Exceptions in D can be allocated by the GC with `new` but you can also allocate the storage for an exception yourself.
 
-* C++ has `namepspaces` and are used like this `namespace Foo{ namespace Bar{ namespace Baz{..}}}`. D uses modules with a file structure. To get `foo.bar.baz` you can create `baz.d` inside the `bar` folder and `bar` inside the `foo` folder.
+* C++ has `namespaces` and are used like this `namespace Foo{ namespace Bar{ namespace Baz{..}}}`. D uses modules with a file structure. To get `foo.bar.baz` you can create `baz.d` inside the `bar` folder and `bar` inside the `foo` folder.
 
 * Globals in D are only thread local by default unless they are immutable. To get thread safe global access you would mark the global variable as `shared`. To get the same global variables as in C++ you would use `__gshared`.
 
