@@ -1,4 +1,5 @@
 baseurl = "https://maikklein.github.io/"
 title = "Blog"
 author = "Maik Klein"
+disqusShortname = "maikklein-blog"
 
