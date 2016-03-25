@@ -1,6 +1,6 @@
 +++
-date        = "2016-03-01"
-title       = "Soa"
+date        = "2016-03-25"
+title       = "Why and when you should use SoA"
 tags        = [ "D", "soa", "dod" ]
 +++
 
@@ -452,8 +452,4 @@ remoteClients.address[index];
 ~~~
 
 But `SoA` scales much better because you can partially access your data without needlessly loading unrelevant data into your cache.
-
-
-
-
 
