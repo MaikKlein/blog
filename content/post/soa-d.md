@@ -27,7 +27,7 @@ struct Vec2{
 
 # Why is SoA useful?
 
-Imagine you want to write a small `udp game server` with a `client server architecture`. You will have a server where clients can connect to. The `server` needs to remeber which clients are currently connected. The server polls messages with `recvfrom` and in case you are not familiar with udp `recvfrom` returns the packet that was sent to the port where to socket was bound to and the address.
+Imagine you want to write a small `udp game server` with a `client server architecture`. You will have a server where clients can connect to. The `server` needs to remember which clients are currently connected. The server polls messages with `recvfrom` and in case you are not familiar with udp `recvfrom` returns the packet that was sent to the port where to socket was bound to and the address.
 
 When a packet comes in the first thing you probably want to know is if the packet came from a connected client. You would be inclined to write it like this:
 
@@ -50,7 +50,7 @@ struct Server{
 
 If we want to know which client has sent the package we can just use the `remoteClients` array to find the correct `remoteClient`. The problem is that we need to iterate over `RemoteClient` but we are only really interested in the address field. That means we needlessly load all the other data like `lastReceivedPacket` even if we don't need it.
 
-And if you are curious how much data could be inside a `RemoteClient` in a real world application, here is the struct of [Enet Peer](https://github.com/lsalzman/enet/blob/master/include/enet/enet.h#L258). It might not be the fairest comparision because it is a `Peer` and not a `RemoteClient` but it should illustrate the point that your data might grow fairly large.
+And if you are curious how much data could be inside a `RemoteClient` in a real world application, here is the struct of [Enet Peer](https://github.com/lsalzman/enet/blob/master/include/enet/enet.h#L258). It might not be the fairest comparison because it is a `Peer` and not a `RemoteClient` but it should illustrate the point that your data might grow fairly large.
 
 ~~~c
 typedef struct _ENetPeer
@@ -137,7 +137,7 @@ struct Server{
 }
 ~~~
 
-We can access all addresses with `remoteClients.address` and we don't need to load unecessary data into the cache.
+We can access all addresses with `remoteClients.address` and we don't need to load unnecessary data into the cache.
 
 # Isn't SoA awkward to use?
 
@@ -152,7 +152,7 @@ struct RemoteClients{
 }
 ~~~
 
-The definition is simplified because we need to allocate the arrays, grow them if we want to have dynamic arrays. We also need to worry about inserting and removing elements, it shouldn't happen that we only add an address to `RemoteClients` without adding `lastReceivedPacket`. That is because the data is loosley coupled. Previously with `AoS` we could access the `RemoteClient` with `remoteClients[index]` but now we are accessing a `RemoteClient` by its components
+The definition is simplified because we need to allocate the arrays, grow them if we want to have dynamic arrays. We also need to worry about inserting and removing elements, it shouldn't happen that we only add an address to `RemoteClients` without adding `lastReceivedPacket`. That is because the data is loosely coupled. Previously with `AoS` we could access the `RemoteClient` with `remoteClients[index]` but now we are accessing a `RemoteClient` by its components
 `remoteClients.addresses[index]` and `remoteClients.lastReceivedPacket[index]`.
 
 
@@ -382,7 +382,7 @@ Firs ot all `SoA` is not a silver bullet and it doesn't mean you should replace 
 `SoA` makes sense if:
 
 * You know that you want to store your data in an array.
-* You want partical access to the data.
+* You want partial access to the data.
 
 But sometimes you still want to access all components of your data. An example would be a vector.
 
@@ -413,7 +413,7 @@ and you want to filter all vectors where the `x component` is less than `10.0f`,
 
 # Isn't SoA premature optimization?
 
-In my opionion it is not. The problem with `AoS` is that if it becomes a performance bottleneck in the future, you will have to refactor a lot of code. For example you might want to pack your data into a struct hot and cold like this:
+In my opinion it is not. The problem with `AoS` is that if it becomes a performance bottleneck in the future, you will have to refactor a lot of code. For example you might want to pack your data into a struct hot and cold like this:
 
 ~~~d
 struct Bar{
