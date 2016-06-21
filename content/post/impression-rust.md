@@ -319,7 +319,7 @@ impl<T, N, M> Matrix<T, N, M>
 ~~~
 Obviously this looks horrendous and I am not even sure I had to write it like that. It was really annoying to repeatedly specify the copy constrain.
 
-The only good part was that it was super trivial to write. I did 0 thinking about any constrains, I just looked at the error messages and copy pasted the constrain. I did this until Rusts stopped complaining. I was really surprised that how easy this was and it would probably not be too unreasonable to think that the constrains could possibly be generated with some external tool.
+The only good part was that it was super trivial to write. I did 0 thinking about any constrains, I just looked at the error messages and copy pasted the constrain. I did this until Rust stopped complaining. I was really surprised that how easy this was and it would probably not be too unreasonable to think that the constrains could possibly be generated with some external tool.
 
 My experience with cargo and crates.io was flawless so far. I didn't run into any issue at all. I really like how intuitive it was to get up and running. Publishing a crate was also pretty simple, you can find it [here](https://crates.io/crates/rla). Please note that the library is completely experimental and will probably never be finished.
 
