@@ -7,7 +7,7 @@ tags        = [ "Rust"]
 
 # First impression of Rust after two years - Part 1
 
-The last time I was using Rust was in version 0.6 - 0.7, which was roughly 2 years ago. I decided to come back to take another look
+The last time I was using Rust was in version 0.6 - 0.7, which was roughly 2 years ago. I decided to come back to take another look.
 
 I decided to write two small libraries over the weekend. An n-dimensional, generic and typesafe linear algebra library and a task pool implementation with fibers based on naughty dogs [GDC talk](http://www.gdcvault.com/play/1022186/Parallelizing-the-Naughty-Dog-Engine).
 
