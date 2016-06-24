@@ -32,8 +32,8 @@ fn test(v: Vec<i32>){
 }
 fn main() {
     let v = vec![1, 2, 3];
-    test(v.clone()); // v has moved into test
-    // v can not be used
+    test(v.clone()); // the cloned vec has moved into test
+    // v can still be used here
 }
 ~~~
 
