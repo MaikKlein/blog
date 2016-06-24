@@ -567,9 +567,7 @@ SomeResult test(){
 }
 ~~~
 
-### Explicit implicit conversion
-
-In both D and Rust it is possible to explicitly define implicit conversions.
+### Explicit implicit conversion/coercions
 
 ~~~Rust
 use std::ops::Deref;
@@ -617,6 +615,10 @@ fn main() {
 }
 ~~~
 
+>Here’s the rule: If you have a type U, and it implements Deref<Target=T>, values of &U will automatically coerce to a &T [quote](https://doc.rust-lang.org/book/deref-coercions.html)
+
+This is also the reason that you can pass a `String` into a function that expects a `&str`.
+
 ~~~D
 struct Wrapper(T){
     T value;
@@ -648,7 +650,9 @@ void main()
     f.print();
 }
 ~~~
-[Proxy](https://dlang.org/phobos/std_typecons.html#.Proxy) can be used to forbid the conversions and only forward the methods to the new type. I am unsure if this could be achieved in Rust. I assume forwarding methods can only be done manually or with a helper macro.
+In D calling `f.print()` is then the same thing as `f.value.print()`. This means `Wrapper<T>` can be passed to anything that expects a `T`.
+
+[Proxy](https://dlang.org/phobos/std_typecons.html#.Proxy) can be used to forbid the conversions and only forward the methods to the new type.
 
 ### Unused generics
 
