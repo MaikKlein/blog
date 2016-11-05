@@ -103,7 +103,8 @@ You may notice that the thread id is always the same. This is because a `future`
 If you want parallelism you should probably not submit one giant future but more smaller ones.
 ~~~Rust
 let c: Vec<i32> =
-    (0..10).map(|i| pool.spawn(future_test(i))).map(|f| f.wait().unwrap()).collect();
+    (0..10).map(|i| pool.spawn(future_test(i))).collect::<Vec<_>>().into_iter()
+           .map(|f| f.wait().unwrap()).collect();
 ~~~
 This code will print:
 ~~~Rust
