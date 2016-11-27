@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Type safe OpenGL - Converting strings into types in D &middot; </title>
+        <meta name="description" content="">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.16-DEV" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://maikklein.github.io/css/normalize.css">
+        <link rel="stylesheet" href="https://maikklein.github.io/css/highlight.css">
+        <link rel="stylesheet" href="https://maikklein.github.io/css/style.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    </head>
+    <body>
+        
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Blog" href="https://maikklein.github.io/">Blog</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://maikklein.github.io/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                        
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Type safe OpenGL - Converting strings into types in D</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2015-11-14" itemprop="datePublished">Sat, Nov 14, 2015</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="http://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author"></a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    <p>Writing glsl code is usually not that hard but it is easy to make mistakes, especially if you are changing some glsl files and forgetting to update the OpenGL calls.</p>
+
+<p>We will parse a glsl shader and extract the types as a string at compile time, then we use those strings to create actual types. After we have obtained the types we will generate a wrapper for that glsl shader at compile time.</p>
+
+<p>The benefit is that we will get a nice interface that won&rsquo;t allow you to make any mistakes. Another benefit will be that if the glsl shader changes the wrapper will change too, which helps you to keep the code in sync by generating helpful compiler errors.</p>
+
+<p>In this blog post we will learn how we can turn strings into actual types at compile time.</p>
+
+<pre><code class="language-d">...
+in vec2 fragTexCoord;
+in vec3 fragNormal;
+in vec3 fragVert;
+...
+[&quot;vec2&quot;,&quot;vec3&quot;,&quot;vec3&quot;] to AliasSeq!(Vector2,Vector2,Vector3)
+</code></pre>
+
+<p>Converting strings to types is very easy in D</p>
+
+<pre><code class="language-d">template glslStringtoTypeV1(string stringType){
+  static if(stringType == &quot;int&quot;){
+    alias glslStringtoTypeV1 = int;
+  }
+  else static if(stringType == &quot;float&quot;){
+    alias glslStringtoTypeV1 = float;
+  }
+}
+void main()
+{
+  glslStringtoTypeV1!&quot;float&quot; f; //f is of type float
+}
+</code></pre>
+
+<p>But <a href="https://www.opengl.org/registry/doc/GLSLangSpec.4.40.pdf">glsl has actually quite a few types</a> and it would be annoying to  write that many <code>static if</code> blocks.</p>
+
+<p>D also has template specializations like C++, maybe this would make the code easier to write?</p>
+
+<pre><code class="language-d">template glslStringtoTypeV2(string s){
+  static assert(false, s ~ &quot; is not a GLSL type&quot;);
+}
+template glslStringtoTypeV2(string s: &quot;int&quot;){
+  alias glslStringtoTypeV2 = int;
+}
+template glslStringtoTypeV2(string s: &quot;float&quot;){
+  alias glslStringtoTypeV2 = float;
+}
+void main()
+{
+  glslStringtoTypeV2!&quot;float&quot; f; //f is of type float
+}
+</code></pre>
+
+<p>The nice thing about D is that we can pass almost any value into a template, in this case we use <code>string</code>. I think the code already looks much easier to write and read but it still has a lot of noise. Maybe we can reduce the noise with <code>template mixins</code>.</p>
+
+<p><code>Template mixins</code> allow you to expand a template with the <code>mixin</code> keyword.</p>
+
+<pre><code class="language-d">mixin template AddShader(T,string stringType){
+  template glslStringtoTypeV2(string s: stringType){
+    alias glslStringtoTypeV2 = T;
+  }
+}
+template glslStringtoTypeV2(string s){
+  static assert(false, s ~ &quot; is not a GLSL type&quot;);
+}
+mixin AddShader!(int,&quot;int&quot;);
+mixin AddShader!(int,&quot;float&quot;);
+void main()
+{
+  glslStringtoTypeV2!&quot;float&quot; f; //err
+}
+</code></pre>
+
+<p>This looks much better unfortunately this doesn&rsquo;t compile because <code>template mixins</code> expand into a different scope. D also allows us to insert strings at compile time with <code>mixins</code>. You can think of them like macros from C but they are more powerful because they are ordinary strings which can be manipulated.</p>
+
+<pre><code class="language-d">template AddShader(T,string stringType){
+  enum AddShader = 
+    &quot;template glslStringtoTypeV2(string s: &quot;~stringType.stringof~&quot;){
+         alias glslStringtoTypeV2 = &quot; ~ T.stringof ~ &quot;;&quot; ~
+    &quot;}&quot;;
+}
+template glslStringtoTypeV2(string s){
+  static assert(false, s ~ &quot; is not a GLSL type&quot;);
+}
+mixin(AddShader!(int,&quot;int&quot;));
+mixin(AddShader!(float,&quot;float&quot;));
+
+void main()
+{
+  glslStringtoTypeV2!&quot;float&quot; f; //f is of type float
+}
+</code></pre>
+
+<p>This is almost as nice as <code>template mixins</code> but I am not the biggest fan of writing source code as a string. Maybe there is still some room for improvement.</p>
+
+<pre><code class="language-d">struct ShaderType(T,string s){
+  alias Type = T;
+  enum string stringType = s;
+}
+enum isShaderType(T) = std.traits.isInstanceOf!(ShaderType,T);
+
+template StringTypeGen(string stringType, ShaderTypes...)
+  if(allSatisfy!(isShaderType, ShaderTypes)
+     &amp;&amp; ShaderTypes.length &gt; 0)
+{
+  static if(ShaderTypes[0].stringType == stringType ){
+    alias StringTypeGen = ShaderTypes[0].Type;
+  }
+  else static if(ShaderTypes.length == 1){
+    static assert(false,stringType ~ &quot; is not a recognized type.&quot;);
+  }
+  else{
+    alias StringTypeGen = StringTypeGen!(stringType, ShaderTypes[1..$]);
+  }
+}
+struct Matrix3{}
+struct Vector3{}
+alias glslStringToType(string s) = StringTypeGen!(s
+    ,ShaderType!(int, &quot;int&quot;)
+    ,ShaderType!(float, &quot;float&quot;)
+    ,ShaderType!(double, &quot;double&quot;)
+    ,ShaderType!(uint, &quot;uint&quot;)
+    ,ShaderType!(bool, &quot;bool&quot;)
+    ,ShaderType!(Matrix3, &quot;mat3&quot;)
+    ,ShaderType!(Vector3, &quot;vec3&quot;)
+    //....
+);
+void main()
+{
+  glslStringToType!&quot;float&quot; f; //f is of type float
+}
+</code></pre>
+
+<p>This is the final version which was a bit more work to create but it&rsquo;s easy to add glsl types, has nice error messages and is reusable. The last missing part is how we can turn a list of strings into a list of types.</p>
+
+<pre><code class="language-d">void main()
+{
+  alias VertexInput = AliasSeq!(&quot;mat3&quot;,&quot;int&quot;,&quot;vec3&quot;,&quot;double&quot;);
+  alias VertexInputTypes = staticMap!(glslStringToType,VertexInput);
+  //VertexInputTypes is of type AliasSeq!(Matrix3,int,Vector3,double)
+}
+</code></pre>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+        <p class="post-tags">
+            <span>Tagged:</span>
+            
+                 <a href="/tags/d/">D</a>
+            
+                 <a href="/tags/opengl/">opengl</a>
+            
+        </p>
+    
+
+    <div class="share">
+        <a class="icon-github" href="https://github.com/MaikKlein">
+            <i class="fa fa-github"></i>
+            <span class="hidden">Github</span>
+        </a>
+    </div>
+    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'maikklein-blog';
+    var disqus_identifier = 'https:\/\/maikklein.github.io\/post\/2015-11-14-Converting-strings-to-types\/';
+    var disqus_title = 'Type safe OpenGL - Converting strings into types in D';
+    var disqus_url = 'https:\/\/maikklein.github.io\/post\/2015-11-14-Converting-strings-to-types\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</footer>
+
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'maikklein-blog';
+    var disqus_identifier = 'https:\/\/maikklein.github.io\/post\/2015-11-14-Converting-strings-to-types\/';
+    var disqus_title = 'Type safe OpenGL - Converting strings into types in D';
+    var disqus_url = 'https:\/\/maikklein.github.io\/post\/2015-11-14-Converting-strings-to-types\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Blog" href="https://maikklein.github.io/">Blog</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://maikklein.github.io/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/highlight.min.js"></script>
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.2.0/styles/github.min.css">
+        <script src="https://maikklein.github.io/js/jquery.fitvids.js"></script>
+        <script src="https://maikklein.github.io/js/scripts.js"></script>
+    </body>
+</html>
+

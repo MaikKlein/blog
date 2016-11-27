@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Opengl on Blog</title>
+    <link>https://maikklein.github.io/tags/opengl/</link>
+    <description>Recent content in Opengl on Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <lastBuildDate>Sat, 14 Nov 2015 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://maikklein.github.io/tags/opengl/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Type safe OpenGL - Converting strings into types in D</title>
+      <link>https://maikklein.github.io/post/2015-11-14-Converting-strings-to-types/</link>
+      <pubDate>Sat, 14 Nov 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://maikklein.github.io/post/2015-11-14-Converting-strings-to-types/</guid>
+      <description>&lt;p&gt;Writing glsl code is usually not that hard but it is easy to make mistakes, especially if you are changing some glsl files and forgetting to update the OpenGL calls.&lt;/p&gt;
+
+&lt;p&gt;We will parse a glsl shader and extract the types as a string at compile time, then we use those strings to create actual types. After we have obtained the types we will generate a wrapper for that glsl shader at compile time.&lt;/p&gt;
+
+&lt;p&gt;The benefit is that we will get a nice interface that won&amp;rsquo;t allow you to make any mistakes. Another benefit will be that if the glsl shader changes the wrapper will change too, which helps you to keep the code in sync by generating helpful compiler errors.&lt;/p&gt;
+
+&lt;p&gt;In this blog post we will learn how we can turn strings into actual types at compile time.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;...
+in vec2 fragTexCoord;
+in vec3 fragNormal;
+in vec3 fragVert;
+...
+[&amp;quot;vec2&amp;quot;,&amp;quot;vec3&amp;quot;,&amp;quot;vec3&amp;quot;] to AliasSeq!(Vector2,Vector2,Vector3)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Converting strings to types is very easy in D&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;template glslStringtoTypeV1(string stringType){
+  static if(stringType == &amp;quot;int&amp;quot;){
+    alias glslStringtoTypeV1 = int;
+  }
+  else static if(stringType == &amp;quot;float&amp;quot;){
+    alias glslStringtoTypeV1 = float;
+  }
+}
+void main()
+{
+  glslStringtoTypeV1!&amp;quot;float&amp;quot; f; //f is of type float
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;But &lt;a href=&#34;https://www.opengl.org/registry/doc/GLSLangSpec.4.40.pdf&#34;&gt;glsl has actually quite a few types&lt;/a&gt; and it would be annoying to  write that many &lt;code&gt;static if&lt;/code&gt; blocks.&lt;/p&gt;
+
+&lt;p&gt;D also has template specializations like C++, maybe this would make the code easier to write?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;template glslStringtoTypeV2(string s){
+  static assert(false, s ~ &amp;quot; is not a GLSL type&amp;quot;);
+}
+template glslStringtoTypeV2(string s: &amp;quot;int&amp;quot;){
+  alias glslStringtoTypeV2 = int;
+}
+template glslStringtoTypeV2(string s: &amp;quot;float&amp;quot;){
+  alias glslStringtoTypeV2 = float;
+}
+void main()
+{
+  glslStringtoTypeV2!&amp;quot;float&amp;quot; f; //f is of type float
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The nice thing about D is that we can pass almost any value into a template, in this case we use &lt;code&gt;string&lt;/code&gt;. I think the code already looks much easier to write and read but it still has a lot of noise. Maybe we can reduce the noise with &lt;code&gt;template mixins&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;Template mixins&lt;/code&gt; allow you to expand a template with the &lt;code&gt;mixin&lt;/code&gt; keyword.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;mixin template AddShader(T,string stringType){
+  template glslStringtoTypeV2(string s: stringType){
+    alias glslStringtoTypeV2 = T;
+  }
+}
+template glslStringtoTypeV2(string s){
+  static assert(false, s ~ &amp;quot; is not a GLSL type&amp;quot;);
+}
+mixin AddShader!(int,&amp;quot;int&amp;quot;);
+mixin AddShader!(int,&amp;quot;float&amp;quot;);
+void main()
+{
+  glslStringtoTypeV2!&amp;quot;float&amp;quot; f; //err
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This looks much better unfortunately this doesn&amp;rsquo;t compile because &lt;code&gt;template mixins&lt;/code&gt; expand into a different scope. D also allows us to insert strings at compile time with &lt;code&gt;mixins&lt;/code&gt;. You can think of them like macros from C but they are more powerful because they are ordinary strings which can be manipulated.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;template AddShader(T,string stringType){
+  enum AddShader = 
+    &amp;quot;template glslStringtoTypeV2(string s: &amp;quot;~stringType.stringof~&amp;quot;){
+         alias glslStringtoTypeV2 = &amp;quot; ~ T.stringof ~ &amp;quot;;&amp;quot; ~
+    &amp;quot;}&amp;quot;;
+}
+template glslStringtoTypeV2(string s){
+  static assert(false, s ~ &amp;quot; is not a GLSL type&amp;quot;);
+}
+mixin(AddShader!(int,&amp;quot;int&amp;quot;));
+mixin(AddShader!(float,&amp;quot;float&amp;quot;));
+
+void main()
+{
+  glslStringtoTypeV2!&amp;quot;float&amp;quot; f; //f is of type float
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This is almost as nice as &lt;code&gt;template mixins&lt;/code&gt; but I am not the biggest fan of writing source code as a string. Maybe there is still some room for improvement.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;struct ShaderType(T,string s){
+  alias Type = T;
+  enum string stringType = s;
+}
+enum isShaderType(T) = std.traits.isInstanceOf!(ShaderType,T);
+
+template StringTypeGen(string stringType, ShaderTypes...)
+  if(allSatisfy!(isShaderType, ShaderTypes)
+     &amp;amp;&amp;amp; ShaderTypes.length &amp;gt; 0)
+{
+  static if(ShaderTypes[0].stringType == stringType ){
+    alias StringTypeGen = ShaderTypes[0].Type;
+  }
+  else static if(ShaderTypes.length == 1){
+    static assert(false,stringType ~ &amp;quot; is not a recognized type.&amp;quot;);
+  }
+  else{
+    alias StringTypeGen = StringTypeGen!(stringType, ShaderTypes[1..$]);
+  }
+}
+struct Matrix3{}
+struct Vector3{}
+alias glslStringToType(string s) = StringTypeGen!(s
+    ,ShaderType!(int, &amp;quot;int&amp;quot;)
+    ,ShaderType!(float, &amp;quot;float&amp;quot;)
+    ,ShaderType!(double, &amp;quot;double&amp;quot;)
+    ,ShaderType!(uint, &amp;quot;uint&amp;quot;)
+    ,ShaderType!(bool, &amp;quot;bool&amp;quot;)
+    ,ShaderType!(Matrix3, &amp;quot;mat3&amp;quot;)
+    ,ShaderType!(Vector3, &amp;quot;vec3&amp;quot;)
+    //....
+);
+void main()
+{
+  glslStringToType!&amp;quot;float&amp;quot; f; //f is of type float
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This is the final version which was a bit more work to create but it&amp;rsquo;s easy to add glsl types, has nice error messages and is reusable. The last missing part is how we can turn a list of strings into a list of types.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-d&#34;&gt;void main()
+{
+  alias VertexInput = AliasSeq!(&amp;quot;mat3&amp;quot;,&amp;quot;int&amp;quot;,&amp;quot;vec3&amp;quot;,&amp;quot;double&amp;quot;);
+  alias VertexInputTypes = staticMap!(glslStringToType,VertexInput);
+  //VertexInputTypes is of type AliasSeq!(Matrix3,int,Vector3,double)
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

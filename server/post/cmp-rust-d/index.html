@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Comparison between Rust and D &middot; </title>
+        <meta name="description" content="">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.16-DEV" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://maikklein.github.io/css/normalize.css">
+        <link rel="stylesheet" href="https://maikklein.github.io/css/highlight.css">
+        <link rel="stylesheet" href="https://maikklein.github.io/css/style.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    </head>
+    <body>
+        
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Blog" href="https://maikklein.github.io/">Blog</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://maikklein.github.io/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                        
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Comparison between Rust and D</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2016-06-23" itemprop="datePublished">Thu, Jun 23, 2016</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="http://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author"></a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    
+
+<h1 id="comparison-between-rust-and-d:a33c6a773242a076961a1afafbd9aef7">Comparison between Rust and D</h1>
+
+<p>I will try to compare <code>Rust</code> and <code>D</code> as objectively as possible. I will mostly focus the language parts that can actually be compared.</p>
+
+<p><em>Rust currently is at version 1.9 and D is at version 2.071.0.</em></p>
+
+<h3 id="move-and-copy-semantics:a33c6a773242a076961a1afafbd9aef7">Move and copy semantics</h3>
+
+<p>Rust moves by default or copies if the <code>Copy</code> trait is implemented.</p>
+
+<pre><code class="language-Rust">fn test(v: Vec&lt;i32&gt;){
+}
+fn main() {
+    let v = vec![1, 2, 3];
+    test(v); // v has moved into test
+    // v can not be used
+}
+</code></pre>
+
+<p>Explicit <code>copies</code> are done in Rust with the <code>Clone</code> trait.</p>
+
+<pre><code class="language-Rust">fn test(v: Vec&lt;i32&gt;){
+}
+fn main() {
+    let v = vec![1, 2, 3];
+    test(v.clone()); // the cloned vec has moved into test
+    // v can still be used here
+}
+</code></pre>
+
+<p>D does a shallow copy by default</p>
+
+<pre><code class="language-D">import std.container: Array;
+
+void test(Array!int arr){
+    arr.insert(4);
+}
+void main()
+{
+    auto arr = Array!int(1, 2, 3);
+    test(arr); // only does a shallow copy
+    // Array contains now elements 1, 2, 3, 4
+}
+</code></pre>
+
+<p>Explicit copying has to be implemented manually. <code>Array</code> exposes a <code>dup</code> method that can be used to duplicate an array.</p>
+
+<pre><code class="language-D">import std.container: Array;
+
+void test(Array!int arr){
+    arr.insert(4);
+}
+void main()
+{
+    auto arr = Array!int(1, 2, 3);
+    test(arr.dup);
+    //arr still has 3 elements
+}
+</code></pre>
+
+<p>Moves have to be done explicitly with <code>move</code>.</p>
+
+<pre><code class="language-D">import std.container: Array;
+import std.algorithm.mutation: move;
+
+void test(Array!int arr){
+    arr.insert(4);
+}
+void main()
+{
+    auto arr = Array!int(1, 2, 3);
+    test(arr.move);
+    // arr can still be used but is empty
+}
+</code></pre>
+
+<p>Moved values in D can still be used because they are reset to their default state.</p>
+
+<p>It is also possible to reject lvalues for specific functions.</p>
+
+<pre><code class="language-D">import std.container: Array;
+import std.algorithm.mutation: move;
+
+@disable void test(ref Array!int arr);
+void test(Array!int arr){
+    arr.insert(4);
+}
+void main()
+{
+    auto arr = Array!int(1, 2, 3);
+    // test(arr); does not accept an lvalue
+    test(arr.move); // still works
+}
+</code></pre>
+
+<h3 id="mutability:a33c6a773242a076961a1afafbd9aef7">Mutability</h3>
+
+<p>Types in Rust are immutable by default.</p>
+
+<pre><code class="language-Rust">fn main() {
+    let v = vec![1, 2, 3];
+    //v.push(1); // does not work
+    let mut v1 = vec![1, 2, 3];
+    v1.push(1);
+}
+</code></pre>
+
+<p>D requires the <code>immutable</code> keyword.</p>
+
+<pre><code class="language-D">void main()
+{
+    immutable i = 42;
+}
+</code></pre>
+
+<p>D does not allow interior mutability as far as I know, which means it is not possible to create an immutable <code>Array</code>. Interior mutability in Rust can be implemented with <a href="https://doc.rust-lang.org/std/cell/">Cell</a>.</p>
+
+<p>D has another keyword <code>const</code> to restrict exterior mutability.</p>
+
+<pre><code>void main()
+{
+   const arr = Array!int(1, 2, 3);
+   //arr.insert(1); does not compile
+}
+</code></pre>
+
+<p>From the <a href="https://dlang.org/spec/const3.html#const_and_immutable">D spec</a></p>
+
+<blockquote>
+<p>immutable applies to data that cannot change. Immutable data values, once constructed, remain the same for the duration of the program&rsquo;s execution. Immutable data can be placed in ROM (Read Only Memory) or in memory pages marked by the hardware as read only. Since immutable data does not change, it enables many opportunities for program optimization, and has applications in functional style programming.</p>
+</blockquote>
+
+<!-- -->
+
+<blockquote>
+<p>const applies to data that cannot be changed by the const reference to that data. It may, however, be changed by another reference to that same data. Const finds applications in passing data through interfaces that promise not to modify them.</p>
+</blockquote>
+
+<!-- -->
+
+<blockquote>
+<p>Both immutable and const are transitive, which means that any data reachable through an immutable reference is also immutable, and likewise for const.</p>
+</blockquote>
+
+<h3 id="struct-initialization:a33c6a773242a076961a1afafbd9aef7">Struct initialization</h3>
+
+<p>D as well as Rust can field initialize structs.</p>
+
+<pre><code class="language-D">struct Foo{
+     int i;
+}
+
+void main()
+{
+    Foo f = {i: 42};
+}
+</code></pre>
+
+<pre><code class="language-Rust">struct Foo{
+    i: i32
+}
+fn main() {
+    let f = Foo{i: 42};
+}
+</code></pre>
+
+<p>D also has constructors</p>
+
+<pre><code>struct Foo{
+     int i;
+     this(int _i){
+         i = _i;
+     }
+}
+
+void main()
+{
+    auto f = Foo(42);
+}
+</code></pre>
+
+<p>while Rust uses functions to do object construction.</p>
+
+<pre><code>struct Foo{
+    i: i32
+}
+impl Foo{
+    fn new(i: i32) -&gt; Foo{
+        Foo{i: i}
+    }
+}
+fn main() {
+    let f = Foo::new(42);
+}
+</code></pre>
+
+<h3 id="methods-and-ufcs:a33c6a773242a076961a1afafbd9aef7">Methods and UFCS</h3>
+
+<p>Methods in D are implement inside the type.</p>
+
+<pre><code>struct Foo{
+     int i;
+     this(int _i){
+         i = _i;
+     }
+
+     void print(){
+         import std.stdio: writeln;
+         writeln(&quot;Foo &quot;, i);
+     }
+}
+
+void main()
+{
+    auto f = Foo(42);
+    f.print();
+}
+</code></pre>
+
+<p>Rust implements methods outside of the type and inside a <code>impl</code> block.</p>
+
+<pre><code>struct Foo{
+    i: i32
+}
+impl Foo{
+    fn new(i: i32) -&gt; Foo{
+        Foo{i: i}
+    }
+    fn print(&amp;self){
+        println!(&quot;Foo {}&quot;, self.i);
+    }
+}
+fn main() {
+    let f = Foo::new(42);
+    f.print();
+}
+</code></pre>
+
+<p>Also Rust doesn&rsquo;t implicitly capture <code>this / self</code>.</p>
+
+<p>Universal function call syntax allows to call print In Rust like this:</p>
+
+<pre><code>fn main() {
+    let f = Foo::new(42);
+    Foo::print(&amp;f);
+}
+</code></pre>
+
+<p>In D functions can be called like methods</p>
+
+<pre><code>struct Foo{
+     int i;
+     this(int _i){
+         i = _i;
+     }
+}
+
+void print(ref Foo f){
+    import std.stdio: writeln;
+    writeln(&quot;Foo &quot;, f.i);
+}
+
+void main()
+{
+    auto f = Foo(42);
+    // both works
+    f.print();
+    print(f);
+}
+</code></pre>
+
+<p>The advantage of <code>impl</code> blocks is that they reduce verbosity for constrains.</p>
+
+<pre><code>impl&lt;T&gt; Bar&lt;T&gt;
+    where: T: Copy
+{
+    fn something(&amp;self, val: T) -&gt; T{...}
+}
+</code></pre>
+
+<p>It is also possible to have multiple <code>impl</code> for different constrains. As far as I know this is not possible in D, every function needs its own constrains.</p>
+
+<p>A small advantage of D is that it is possible to call those functions directly, like normal functions.</p>
+
+<pre><code>auto zippedRange = zip(r1, r2);
+auto zippedRange = r1.zip(r2);
+</code></pre>
+
+<p>While in Rust this will be a bit more explicit.</p>
+
+<pre><code>let iter = Iterator::zip(iter1, iter2);
+//or
+let iter = iter1.zip(iter2);
+</code></pre>
+
+<h3 id="compile-times:a33c6a773242a076961a1afafbd9aef7">Compile times</h3>
+
+<p>Subjectively Rust compiles slower than D, but it is really hard to get some objective data. I will post the results of compiling racer, rustfmt, DCD and dfmt. I am aware that those numbers are not really representable but it is the best that I can do.</p>
+
+<p>Also note that those a full release builds and not incremental debug builds.</p>
+
+<pre><code>➜  bin time cargo install rustfmt
+    Updating registry `https://github.com/rust-lang/crates.io-index`
+   Compiling winapi v0.2.7
+   Compiling rustc-serialize v0.3.19
+   Compiling bitflags v0.5.0
+   Compiling utf8-ranges v0.1.3
+   Compiling log v0.3.6
+   Compiling getopts v0.2.14
+   Compiling unicode-segmentation v0.1.2
+   Compiling strings v0.0.1
+   Compiling regex-syntax v0.3.3
+   Compiling winapi-build v0.1.1
+   Compiling unicode-xid v0.0.3
+   Compiling kernel32-sys v0.2.2
+   Compiling diff v0.1.9
+   Compiling term v0.4.4
+   Compiling term v0.2.14
+   Compiling libc v0.2.12
+   Compiling memchr v0.1.11
+   Compiling aho-corasick v0.5.2
+   Compiling thread-id v2.0.0
+   Compiling thread_local v0.2.6
+   Compiling regex v0.1.71
+   Compiling syntex_syntax v0.32.0
+   Compiling toml v0.1.30
+   Compiling env_logger v0.3.3
+   Compiling rustfmt v0.5.0
+  Installing /home/maik/.cargo/bin/rustfmt
+  Installing /home/maik/.cargo/bin/cargo-fmt
+cargo install rustfmt  382.58s user 1.49s system 130% cpu 4:54.72 total
+</code></pre>
+
+<pre><code>➜  bin time cargo install racer
+    Updating registry `https://github.com/rust-lang/crates.io-index`
+   Compiling unicode-xid v0.0.3
+   Compiling ansi_term v0.7.4
+   Compiling libc v0.2.12
+   Compiling unicode-width v0.1.3
+   Compiling rustc-serialize v0.3.19
+   Compiling regex-syntax v0.3.3
+   Compiling winapi-build v0.1.1
+   Compiling winapi v0.2.7
+   Compiling kernel32-sys v0.2.2
+   Compiling strsim v0.4.1
+   Compiling term v0.2.14
+   Compiling thread-id v2.0.0
+   Compiling typed-arena v1.1.0
+   Compiling utf8-ranges v0.1.3
+   Compiling bitflags v0.5.0
+   Compiling vec_map v0.6.0
+   Compiling clap v2.2.6
+   Compiling log v0.3.6
+   Compiling memchr v0.1.11
+   Compiling aho-corasick v0.5.2
+   Compiling thread_local v0.2.6
+   Compiling regex v0.1.71
+   Compiling toml v0.1.30
+   Compiling syntex_syntax v0.32.0
+   Compiling env_logger v0.3.3
+   Compiling racer v1.2.10
+  Installing /home/maik/.cargo/bin/racer
+cargo install racer  495.08s user 2.05s system 143% cpu 5:47.45 total
+</code></pre>
+
+<pre><code>➜  DCD git:(master) time make -j4
+find: ‘containers/experimental_allocator/src/std/experimental/allocator/’: No such file or directory
+git log -1 --format=&quot;%H&quot; &gt; githash.txt
+mkdir -p bin
+mkdir -p bin
+dmd src/common/constants.d src/common/socket.d src/common/dcd_version.d src/common/messages.d src/server/autocomplete.d src/server/server.d dsymbol/src/dsymbol/import_.d dsymbol/src/dsymbol/symbol.d dsymbol/src/dsymbol/cache_entry.d dsymbol/src/dsymbol/string_interning.d dsymbol/src/dsymbol/semantic.d dsymbol/src/dsymbol/builtin/symbols.d dsymbol/src/dsymbol/builtin/names.d dsymbol/src/dsymbol/deferred.d dsymbol/src/dsymbol/modulecache.d dsymbol/src/dsymbol/scope_.d dsymbol/src/dsymbol/type_lookup.d dsymbol/src/dsymbol/conversion/first.d dsymbol/src/dsymbol/conversion/package.d dsymbol/src/dsymbol/conversion/second.d libdparse/src/dparse/ast.d libdparse/src/dparse/entities.d libdparse/src/dparse/lexer.d libdparse/src/dparse/parser.d libdparse/src/dparse/formatter.d libdparse/src/dparse/rollback_allocator.d libdparse/src/dparse/stack_buffer.d libdparse/src/std/experimental/lexer.d  containers/src/containers/dynamicarray.d containers/src/containers/ttree.d containers/src/containers/unrolledlist.d containers/src/containers/openhashset.d containers/src/containers/hashset.d containers/src/containers/internal/hash.d containers/src/containers/internal/node.d containers/src/containers/internal/storage_type.d containers/src/containers/internal/element_type.d containers/src/containers/internal/backwards.d containers/src/containers/slist.d msgpack-d/src/msgpack/exception.d msgpack-d/src/msgpack/attribute.d msgpack-d/src/msgpack/package.d msgpack-d/src/msgpack/register.d msgpack-d/src/msgpack/streaming_unpacker.d msgpack-d/src/msgpack/buffer.d msgpack-d/src/msgpack/common.d msgpack-d/src/msgpack/value.d msgpack-d/src/msgpack/unpacker.d msgpack-d/src/msgpack/packer.d -Icontainers/src -Imsgpack-d/src -Ilibdparse/src -Idsymbol/src -Icontainers/experimental_allocator/src -J. -wi -O -release -inline -ofbin/dcd-server
+dmd src/common/constants.d src/common/socket.d src/common/dcd_version.d src/common/messages.d src/client/client.d msgpack-d/src/msgpack/exception.d msgpack-d/src/msgpack/attribute.d msgpack-d/src/msgpack/package.d msgpack-d/src/msgpack/register.d msgpack-d/src/msgpack/streaming_unpacker.d msgpack-d/src/msgpack/buffer.d msgpack-d/src/msgpack/common.d msgpack-d/src/msgpack/value.d msgpack-d/src/msgpack/unpacker.d msgpack-d/src/msgpack/packer.d -Imsgpack-d/src -Imsgpack-d/src -Icontainers/experimental_allocator/src -J. -inline -O -wi -ofbin/dcd-client
+make -j4  42.62s user 2.44s system 104% cpu 43.173 total
+</code></pre>
+
+<pre><code>➜  dfmt git:(master) ✗ time dub build -f -b release
+Performing &quot;release&quot; build using dmd for x86_64.
+experimental_allocator 2.70.0-b1: building configuration &quot;library&quot;...
+libdparse 0.7.0-alpha9: building configuration &quot;library&quot;...
+dfmt 0.5.0-beta3+commit.25.ge3bf269: building configuration &quot;application&quot;...
+Linking...
+dub build -f -b release  40.78s user 0.56s system 99% cpu 41.360 total
+</code></pre>
+
+<h3 id="dynamic-static-dispatch-constrains-and-extending-functionality:a33c6a773242a076961a1afafbd9aef7">Dynamic / static dispatch, constrains and extending functionality</h3>
+
+<p>In Rust it is possible to extend a type using traits.</p>
+
+<pre><code>struct Foo {
+    i: i32,
+}
+
+impl Foo {
+    fn new(i: i32) -&gt; Foo {
+        Foo { i: i }
+    }
+}
+
+trait Print {
+    fn print(&amp;self);
+}
+
+impl Print for Foo {
+    fn print(&amp;self) {
+        println!(&quot;Foo {}&quot;, self.i);
+    }
+}
+
+impl Print for i32 {
+    fn print(&amp;self) {
+        println!(&quot;i32 {}&quot;, self);
+    }
+}
+
+fn main() {
+    let f = Foo::new(42);
+    f.print();
+    Print::print(&amp;f);
+
+    42.print();
+    Print::print(&amp;42);
+}
+</code></pre>
+
+<p>The same thing is possible in D with overloaded functions.</p>
+
+<pre><code>struct Foo{
+     int i;
+     this(int _i){
+         i = _i;
+     }
+}
+
+void print(ref Foo f){
+    import std.stdio: writeln;
+    writeln(&quot;Foo &quot;, f.i);
+}
+
+void print(int i){
+    import std.stdio: writeln;
+    writeln(&quot;int &quot;, i);
+}
+
+void main()
+{
+    auto f = Foo(42);
+    f.print();
+    print(f);
+
+    42.print();
+    print(42);
+}
+</code></pre>
+
+<p>The advantage of traits is that you can use them to constrain types at compile and they allow dynamic dispatch</p>
+
+<pre><code>fn call_print_static&lt;T: Print&gt;(t: &amp;T){
+    t.print();
+}
+
+fn call_print_dynamic(p: &amp;Print){
+    p.print();
+}
+
+fn main() {
+    let f = Foo::new(42);
+    call_print_static(&amp;f);
+    call_print_static(&amp;42);
+
+    call_print_dynamic(&amp;f as &amp;Print);
+    call_print_dynamic(&amp;42 as &amp;Print);
+}
+</code></pre>
+
+<p>This can roughly be expressed in D like this:</p>
+
+<pre><code>interface Print{
+    void print();
+}
+
+class Foo: Print{
+     int i;
+     this(int _i){
+         i = _i;
+     }
+     void print(){
+         import std.stdio: writeln;
+         writeln(&quot;Foo &quot;, i);
+     }
+}
+
+void call_print_dynamic(Print p){
+    p.print();
+}
+
+void call_print_static(T)(T t){
+    t.print();
+}
+
+void main()
+{
+    //f is a pointer
+    auto f = new Foo(42);
+    call_print_dynamic(f);
+    call_print_static(f);
+}
+</code></pre>
+
+<p>Dynamic dispatch with interfaces can only really be used with classes. Classes are by default references types which means if there is a type <code>Foo</code> it implicitly is type <code>Foo*</code>. While it is possible allocate classes on the heap / stack or some memory region, they inherently have an indirection.</p>
+
+<p>Also <code>call_print_static</code> is duck typed, which means that the function expects every <code>T</code> to be callable with <code>.print</code>. This can easily result in ugly error messages.</p>
+
+<p>D doesn&rsquo;t really have a way to automatically constrain types like Rust.</p>
+
+<p>Duck typing still has a few advantages. It is easy get something working, because you don&rsquo;t have to specify every constrain in advance. It is also possible to generate some very specific error messages.</p>
+
+<pre><code>void call_print_static(T)(T t){
+    static assert(!is(T == class), T.stringof ~ &quot; is a class and can not be used.&quot;);
+    t.print();
+}
+
+void main()
+{
+    //f is a pointer
+    auto f = new Foo(42);
+    call_print_dynamic(f);
+    call_print_static(f); // error
+}
+/*
+source/app.d(21,5): Error: static assert  &quot;Foo is a class and can not be used.&quot;
+source/app.d(30,22):        instantiated from here: call_print_static!(Foo)
+*/
+</code></pre>
+
+<h3 id="type-inference:a33c6a773242a076961a1afafbd9aef7">Type inference</h3>
+
+<p>In Rust it is possible to write:</p>
+
+<pre><code class="language-Rust">fn test() -&gt; Result&lt;i32, String&gt; {
+    Ok(42)
+}
+</code></pre>
+
+<p>This works because Rust knows that the return type is <code>Result&lt;i32, String&gt;</code> and that <code>Ok&lt;i32&gt;</code> is part of it. You can not write this in D as far as I know.</p>
+
+<p>The D approach could look like this</p>
+
+<pre><code class="language-D">alias SomeResult = Result!(int, string);
+SomeResult test(){
+    return SomeResult.ok(42);
+}
+</code></pre>
+
+<h3 id="explicit-implicit-conversion-coercions:a33c6a773242a076961a1afafbd9aef7">Explicit implicit conversion/coercions</h3>
+
+<pre><code class="language-Rust">use std::ops::Deref;
+
+struct Wrapper&lt;T&gt; {
+    value: T,
+}
+
+impl&lt;T&gt; Wrapper&lt;T&gt;{
+    fn new(val: T) -&gt; Wrapper&lt;T&gt; {
+        Wrapper{value: val}
+    }
+}
+
+impl&lt;T&gt; Deref for Wrapper&lt;T&gt; {
+    type Target = T;
+    fn deref(&amp;self) -&gt; &amp;T{
+        &amp;self.value
+    }
+}
+
+struct Foo {
+    i: i32,
+}
+
+impl Foo {
+    fn new(i: i32) -&gt; Foo {
+        Foo { i: i }
+    }
+}
+
+trait Print {
+    fn print(&amp;self);
+}
+
+impl Print for Foo {
+    fn print(&amp;self) {
+        println!(&quot;Foo {}&quot;, self.i);
+    }
+}
+
+fn main() {
+    let f = Wrapper::new(Foo::new(42));
+    f.print();
+}
+</code></pre>
+
+<blockquote>
+<p>Here’s the rule: If you have a type U, and it implements Deref<Target=T>, values of &amp;U will automatically coerce to a &amp;T <a href="https://doc.rust-lang.org/book/deref-coercions.html">quote</a></p>
+</blockquote>
+
+<p>This is also the reason that you can pass a <code>String</code> into a function that expects a <code>&amp;str</code>.</p>
+
+<pre><code class="language-D">struct Wrapper(T){
+    T value;
+    this(T _value){
+        value = _value;
+    }
+    alias value this;
+}
+
+interface Print{
+    void print();
+}
+
+class Foo: Print{
+     int i;
+     this(int _i){
+         i = _i;
+     }
+     void print(){
+         import std.stdio: writeln;
+         writeln(&quot;Foo &quot;, i);
+     }
+}
+
+void main()
+{
+    //f is a pointer
+    auto f = Wrapper!Foo(new Foo(42));
+    f.print();
+}
+</code></pre>
+
+<p>In D calling <code>f.print()</code> is then the same thing as <code>f.value.print()</code>. This means <code>Wrapper&lt;T&gt;</code> can be passed to anything that expects a <code>T</code>.</p>
+
+<p><a href="https://dlang.org/phobos/std_typecons.html#.Proxy">Proxy</a> can be used to forbid the conversions and only forward the methods to the new type.</p>
+
+<h3 id="unused-generics:a33c6a773242a076961a1afafbd9aef7">Unused generics</h3>
+
+<p>In D it is perfectly legal to create types with unused generics:</p>
+
+<pre><code class="language-D">struct Foo(A, B){}
+</code></pre>
+
+<p>Rust doesn&rsquo;t allow this by default and requires phantom data.</p>
+
+<pre><code class="language-Rust">use std::marker::PhantomData;
+struct Foo&lt;A, B&gt;{
+    _m_a: PhantomData&lt;A&gt;,
+    _m_b: PhantomData&lt;B&gt;,
+}
+</code></pre>
+
+<h3 id="variadics:a33c6a773242a076961a1afafbd9aef7">Variadics</h3>
+
+<p>Rust doesn&rsquo;t have type level variadics and has to resort to macros. A commonly used variadic macro is <code>vec![...]</code>.</p>
+
+<pre><code class="language-D">// duck typing
+void variadicPrint(Args...)(Args args){
+    // compile time loop
+    foreach(ref arg; args){
+        arg.print();
+    }
+}
+
+void main()
+{
+    auto wrapperF = Wrapper!Foo(new Foo(42));
+    auto f = new Foo(42);
+    variadicPrint(f);
+    //or
+    variadicPrint(f, f, wrapperF, f);
+}
+</code></pre>
+
+<p>Because <code>variadicPrint</code> is duck typed, anything that has a <code>print</code> method, can be passed into it. Variadics also allow <code>Tuple</code> to be implemented as a library in D.</p>
+
+<h3 id="pattern-matching:a33c6a773242a076961a1afafbd9aef7">Pattern matching</h3>
+
+<p>Rust natively supports algebraic data types which can be matched on.</p>
+
+<pre><code class="language-Rust">fn main() {
+    let o = Some(5);
+    match o {
+        Some(i) =&gt; println!(&quot;{}&quot;, i),
+        None =&gt; println!(&quot;None&quot;)
+    }
+}
+</code></pre>
+
+<p>While D has algebaric data types (adt) as a library inside phobos, they have a significant overhead and can not be used at compile time. Luckily adt&rsquo;s can be implemented in around 30 lines of code.</p>
+
+<pre><code class="language-D">alias Test = Algebraic!(uint, float);
+uint i = 5;
+float f = 5.0f;
+auto b = Test(f);
+b.match!(
+    (uint i) =&gt; writeln(&quot;uint, &quot;, i),
+    (float f) =&gt; writeln(&quot;float &quot;, f),
+);
+</code></pre>
+
+<p>Rust allows type deconstruction</p>
+
+<pre><code class="language-Rust">fn main() {
+    let t = (1, &quot;Test&quot;);
+    let (a, b) = t;
+}
+</code></pre>
+
+<p>While something similar can be implemented in D, it will not be as usable.</p>
+
+<h3 id="type-level-values:a33c6a773242a076961a1afafbd9aef7">Type level values</h3>
+
+<p>Rust doesn&rsquo;t really have <code>type level values</code>, the closest thing would probably be <code>typenum</code>. See my <a href="https://maikklein.github.io/post/impression-rust/">blog post</a> about using <code>typenum</code> for a vector / matrix library.</p>
+
+<p><code>Type level values</code> are most commonly used as <code>type level integers</code>. They allow the user to express a vector math library like this</p>
+
+<pre><code class="language-D">alias Vec3f = Vector&lt;float, 3&gt;;
+</code></pre>
+
+<p>D isn&rsquo;t limited to integrals, you can basically pass any type into a template at compile time.</p>
+
+<pre><code class="language-D">struct Worker{
+    string name;
+    uint id;
+}
+
+string level(Worker worker)(){
+    static if(worker.id &lt; 10){
+        return &quot;Grunt&quot;;
+    }
+    else{
+        return &quot;Boss&quot;;
+    }
+}
+void main()
+{
+    // done at compile time
+    enum string grunt = level!(Worker(&quot;Tom&quot;, 5));
+    enum string boss = level!(Worker(&quot;Jeff&quot;, 20));
+}
+</code></pre>
+
+<h3 id="metaprogramming:a33c6a773242a076961a1afafbd9aef7">Metaprogramming</h3>
+
+<p>Rust has 3 features that allows metaprogramming, macros, traits and compiler plugins.</p>
+
+<p>The main purpose of macros is to reduce duplicated code, but they also allow custom syntax like this</p>
+
+<pre><code class="language-Rust">for e in recurrence!(f[i]: f64 = 1.0 ... f[i-1] * i as f64).take(10) {
+    println!(&quot;{}&quot;, e)
+}
+</code></pre>
+
+<p><a href="https://danielkeep.github.io/tlborm/book/pim-README.html">link</a></p>
+
+<p>Traits allow implementations to be implemented for a specific range of types, allow types to be constrained and allow for dynamic dispatch.</p>
+
+<p>Compiler plugins are unstable can operate on the AST and can potentially execute arbitrary code at compile time. An example would be
+<a href="https://github.com/nrc/libhoare">libhoare</a></p>
+
+<pre><code class="language-Rust">#[precond=&quot;x &gt; 0&quot;]
+#[postcond=&quot;result &gt; 1&quot;]
+fn foo(x: int) -&gt; int {
+    let y = 45 / x;
+    y + 1
+}
+</code></pre>
+
+<p>While D natively has design by contract, I don&rsquo;t believe this could be implemented as nicely in D. The closest thing I could imagine would be by using <code>UDA</code> and or mixins. But as far as I know it is not possible to directly manipulate the AST in D.</p>
+
+<p>D has a full arsenal of metaprogramming tools. Type level values, variadics, type level computations, static if, mixins, templates, CTFE, static reflection. The blog post would become too long to showcase every feature but I already made a few blog posts that use some of those features. <a href="https://maikklein.github.io/post/soa-d/">SoA</a>, <a href="http://maikklein.github.io/2016/03/01/metaprogramming-typeobject/">TypeObject ala Boost hana</a>, <a href="https://maikklein.github.io/post/2015-11-14-Converting-strings-to-types/">Strings to types</a>.</p>
+
+<p>CTFE in D is more limited than compiler plugins. It does not allow to execute arbitrary code like connecting to a database at compile time, as it would be a security risk.</p>
+
+<h3 id="standard-library-manual-memory-management-and-ownership-semantics:a33c6a773242a076961a1afafbd9aef7">Standard library, manual memory management and ownership semantics</h3>
+
+<p><em>Before we start let me tell you that it is technically possible to completely avoid the garbage collection in D, but there are currently a few problems.</em></p>
+
+<p><a href="https://doc.rust-lang.org/std/">Rust std</a> and <a href="https://dlang.org/phobos/index.html">D phobos</a></p>
+
+<p>In my opinion a good standard library is very import for a language. The biggest reason for that is every library will use the standard library to some degree.</p>
+
+<p>In Rust most libraries are already using <code>Box</code>, <code>Rc</code>, <code>Arc</code>, <code>Result</code>, <code>Option</code>. In D there currently is <code>Unique</code> and <code>RefCounted</code> which still use the GC. <code>Nullable</code> is similar to <code>Optional</code> but it implements auto deref with <code>alias this</code> and could therefore cause subtle problems.</p>
+
+<p>Ownership can be modelled in D by disabling the copy constructor. A type without a copy constructor must be moved which is similar to Rust. Currently types without a copy constructor can not reasonably be used with the standard library in D as you would have to explicitly call <code>move</code> on them.</p>
+
+<p>This means that you would have to recreate everything in the std that copies in their implementation, which is a lot. Then there are other smaller problems, like how do you move variadic arguments?</p>
+
+<pre><code class="language-D">void foo(Args)(Args args){
+    bar(args); // how do you pass variadics?
+}
+</code></pre>
+
+<p>The way I currently implement this is by looking at the type, if it has no copy constructor I call move, otherwise I copy. I generate a compile time string that looks like this <code>&quot;arg[0], arg[1].move, arg[2].move, arg[3]&quot;</code>.</p>
+
+<p>Basically what I am trying to say is that ownership semantics are not as refined as in Rust at the moment and avoiding the GC with smart pointers will be a lot of work.</p>
+
+<p>To avoid the Gc in D one can use the <a href="https://dlang.org/phobos/std_experimental_allocator.html">allocator</a> library that ships with D. It handles all the low level stuff and exposes generic and composable allocators.</p>
+
+<p>Rust currently does not have any allocators but it seems to come into <code>nighly</code> soon.</p>
+
+<h3 id="conclusion:a33c6a773242a076961a1afafbd9aef7">Conclusion</h3>
+
+<p>I am fairly certain that I forgot to cover a few topics but this should give you a rough overview.</p>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+        <p class="post-tags">
+            <span>Tagged:</span>
+            
+                 <a href="/tags/rust/">Rust</a>
+            
+        </p>
+    
+
+    <div class="share">
+        <a class="icon-github" href="https://github.com/MaikKlein">
+            <i class="fa fa-github"></i>
+            <span class="hidden">Github</span>
+        </a>
+    </div>
+    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'maikklein-blog';
+    var disqus_identifier = 'https:\/\/maikklein.github.io\/post\/cmp-rust-d\/';
+    var disqus_title = 'Comparison between Rust and D';
+    var disqus_url = 'https:\/\/maikklein.github.io\/post\/cmp-rust-d\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</footer>
+
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'maikklein-blog';
+    var disqus_identifier = 'https:\/\/maikklein.github.io\/post\/cmp-rust-d\/';
+    var disqus_title = 'Comparison between Rust and D';
+    var disqus_url = 'https:\/\/maikklein.github.io\/post\/cmp-rust-d\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Blog" href="https://maikklein.github.io/">Blog</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://maikklein.github.io/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/highlight.min.js"></script>
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.2.0/styles/github.min.css">
+        <script src="https://maikklein.github.io/js/jquery.fitvids.js"></script>
+        <script src="https://maikklein.github.io/js/scripts.js"></script>
+    </body>
+</html>
+
