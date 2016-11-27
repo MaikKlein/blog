@@ -56,7 +56,7 @@ named!(glsl_version<u32>,
 );
 ~~~
 
-`glsl_version<u32>` will create a function with the name `glsl_version` and a return type of `u32`. We then look for a specific string that matches `#version`. It follows by 0 or more spaces which we express with `opt!(space)`, then we exctract n characters that are digits into a variable called `number`. `multispace` recognizes spaces, tabs, carriage returns and line feeds. After that we parse the `number` into a `u32`. I call `.unwrap()` here because it shouldn't fail.
+`glsl_version<u32>` will create a function with the name `glsl_version` and a return type of `u32`. We then look for a specific string that matches `#version`. It follows by 0 or more spaces which we express with `opt!(space)`, then we extract n characters that are digits into a variable called `number`. `multispace` recognizes spaces, tabs, carriage returns and line feeds. After that we parse the `number` into a `u32`. I call `.unwrap()` here because it shouldn't fail.
 
 I will do something really hacky that you should probably never do in production code but it helps us to get started.
 ~~~Rust
