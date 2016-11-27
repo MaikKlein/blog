@@ -24,7 +24,7 @@ void main(){
 
 Here we have two `uniform` variables of type `vec4` and `mat4`, a `vec4` and a `vec2` as input and a `vec3` as output for a vertex shader.
 Before today I had never really written any parser besides for CSV or OBJ and I was always scared of it because I know how complex they can get.
-This are my first steps in Nom.
+These are my first steps in Nom.
 
 We are going to parse the `GLSL` code from above.
 I started by defining an `enum`.
