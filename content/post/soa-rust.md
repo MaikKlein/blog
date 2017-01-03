@@ -215,3 +215,37 @@ void insertBack(T t){
     length = length + 1;
 }
 ~~~
+
+### Update1:
+There is actually a workaround for accessing the same iterator multiple times in a `quote!`.[Source](https://www.reddit.com/r/rust/comments/5lrb9y/soa_in_rust_with_macros_11/dbxwfy7/)
+
+~~~Rust
+let field_idents_: Vec<Ident> = fields.iter().map(|f| f.ident.clone().unwrap()).collect();
+let field_idents = &field_idents_;
+let field_idents1= &field_idents_;
+
+quote!{
+    #[derive(Debug)]
+    struct #soa_ident {
+        #(
+            #vec_fields,
+        )*
+    }
+    impl #soa_ident {
+        pub fn new() -> Self {
+            #soa_ident {
+                #(
+                    #field_idents : Vec::new(),
+                )*
+            }
+        }
+
+        pub fn push(&mut self, value: #ident){
+            let #ident{#(#field_idents: #field_idents1, )*} = value;
+            #(
+                self.#field_idents.push(#field_idents1);
+            )*
+        }
+    }
+}
+~~~
