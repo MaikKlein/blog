@@ -130,9 +130,9 @@ let field_idents: Vec<Ident> = fields.iter().map(|f| f.ident.clone().unwrap()).c
 quote!{
     impl #soa_ident {
         pub fn push(&mut self, value: #ident){
-            let #ident{#(#field_ident: #field_ident, )*} = value;
+            let #ident{#(#field_idents: #field_idents, )*} = value;
             #(
-               self.#field_ident.push(#field_ident);
+               self.#field_idents.push(#field_idents);
             )*
         }
     }
