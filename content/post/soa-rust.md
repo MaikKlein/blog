@@ -4,7 +4,7 @@ title       = "SoA in Rust with Macros 1.1"
 tags        = [ "Rust", "Macros1.1", "SoA"]
 +++
 
-*Disclaimer*: This is just a proof of conecept.
+*Disclaimer*: This is just a proof of concept.
 
 ## SoA
 ~~~Rust
