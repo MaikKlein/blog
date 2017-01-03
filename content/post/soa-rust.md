@@ -49,7 +49,7 @@ fn main() {
 Let us have a look at the generated code.
 
 ~~~Rust
-[ derive ( Debug ) ]
+#[derive(Debug)]
 struct GameObjectSoA {
     pub pos: Vec<Vec2>,
     pub vel: Vec<Vec2>,
