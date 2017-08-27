@@ -28,5 +28,5 @@ rustc = {path = "compiler/rust/src/librustc"}
 
 This way Rust will not try to compile `librustc` but tools like `intellij-rust` can still access the metadata.
 
-![](http://i.imgur.com/EVk1xv7.gif)
+![](https://i.imgur.com/EVk1xv7.gif)
 
